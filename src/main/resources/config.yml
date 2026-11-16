@@ -1,0 +1,8 @@
+messages:
+  prefix: '&8[&aBASTION MC&8] &r'
+  spawn-set: '&aSpawn establecido correctamente.'
+  spawn-teleport: '&a¡Bienvenido al spawn!'
+  spawn-missing: '&cTodavía no se ha establecido el spawn. Pide a un administrador que use /setspawn.'
+  player-only: '&cEste comando solo puede utilizarse dentro del juego.'
+  no-permission: '&cNo tienes permiso para utilizar este comando.'
+  world-missing: '&cEl mundo del spawn no está cargado.'

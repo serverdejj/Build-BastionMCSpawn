@@ -1,0 +1,22 @@
+name: BastionMCSpawn
+version: 1.0.0
+main: mc.bastion.spawn.BastionMCSpawn
+api-version: '1.21'
+author: BASTION MC
+description: Spawn configurable para primeras conexiones, respawn y comando /spawn.
+commands:
+  spawn:
+    description: Teletransportarse al spawn del servidor.
+    usage: /spawn
+    permission: bastionmcspawn.spawn
+  setspawn:
+    description: Establecer el spawn del servidor.
+    usage: /setspawn
+    permission: bastionmcspawn.admin
+permissions:
+  bastionmcspawn.spawn:
+    description: Usar /spawn.
+    default: true
+  bastionmcspawn.admin:
+    description: Configurar el spawn.
+    default: op
