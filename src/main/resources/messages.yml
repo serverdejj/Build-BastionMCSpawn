@@ -1,0 +1,17 @@
+# Compatible con &a, &l, &#RRGGBB y MiniMessage, por ejemplo:
+# <gradient:#00C135:#A4FF00>Texto con gradiente</gradient>
+messages:
+  prefix: '&#00C135&lBASTION MC &8» &r'
+  spawn-set: '{prefix}&#00C135Spawn establecido correctamente.'
+  spawn-teleport: '{prefix}<gradient:#00C135:#A4FF00>¡Bienvenido al spawn!</gradient>'
+  spawn-missing: '{prefix}&cTodavía no se ha establecido el spawn. Usa /setspawn.'
+  world-missing: '{prefix}&cEl mundo del spawn no está cargado.'
+  player-only: '{prefix}&cEste comando solo puede utilizarse dentro del juego.'
+  no-permission: '{prefix}&cNo tienes permiso para utilizar este comando.'
+  countdown: '{prefix}&eTeletransporte en &f{seconds} &esegundos...'
+  already-waiting: '{prefix}&cYa tienes un teletransporte en curso.'
+  cancelled-movement: '{prefix}&cTeletransporte cancelado porque te moviste.'
+  teleport-failed: '{prefix}&cNo se pudo completar el teletransporte.'
+  save-error: '{prefix}&cNo se pudo guardar el spawn. Revisa la consola.'
+  reloaded: '{prefix}&aConfiguración y mensajes recargados.'
+  reload-usage: '{prefix}&eUso: /bastionspawn reload'
