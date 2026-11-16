@@ -12,6 +12,9 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.TextDisplay;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -155,7 +158,26 @@ public final class BastionMCSpawn extends JavaPlugin implements Listener, Comman
         return true;
     }
 
+    // Called immediately before teleportation, not at the beginning of the countdown.
+    // The nametag plugin otherwise remounts its TextDisplay during the five-second wait.
+    private void prepareNametagTravel(Player player) {
+        Plugin plugin = Bukkit.getPluginManager().getPlugin("BastionMCNameTangs");
+        if (plugin != null && plugin.isEnabled()) {
+            try {
+                plugin.getClass().getMethod("prepareRtpTravel", Player.class).invoke(plugin, player);
+            } catch (ReflectiveOperationException ex) {
+                getLogger().warning("No se pudo coordinar con BastionMCNameTangs: " + ex);
+            }
+        }
+        // Extra safety for older nametag versions: do not teleport with a mounted display.
+        for (Entity passenger : player.getPassengers()) {
+            if (passenger instanceof TextDisplay) player.removePassenger(passenger);
+        }
+    }
+
     private void teleport(Player player, Location destination) {
+        if (!player.isOnline() || player.isDead()) return;
+        prepareNametagTravel(player);
         player.teleportAsync(destination).whenComplete((success, error) ->
             Bukkit.getScheduler().runTask(this, () -> {
                 if (error != null || !Boolean.TRUE.equals(success)) {

@@ -1,9 +1,9 @@
 name: BastionMCSpawn
-version: 1.1.0
+version: 1.1.1
 main: mc.bastion.spawn.BastionMCSpawn
 api-version: '1.21'
 author: BASTION MC
-description: Spawn configurable con cuenta regresiva y mensajes editables.
+description: Spawn configurable con cuenta regresiva, mensajes editables y compatibilidad con nametags.
 commands:
   spawn:
     description: Teletransportarse al spawn del servidor.
