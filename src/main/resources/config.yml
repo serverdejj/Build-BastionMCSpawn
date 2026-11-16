@@ -3,3 +3,8 @@ teleport:
   delay-seconds: 5
   cancel-on-move: true
   op-bypass: false
+
+# true: todos los jugadores aparecen en el spawn al conectarse.
+# false: solo jugadores nuevos (comportamiento anterior).
+join:
+  teleport-to-spawn: true

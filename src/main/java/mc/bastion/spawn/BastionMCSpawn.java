@@ -207,7 +207,7 @@ public final class BastionMCSpawn extends JavaPlugin implements Listener, Comman
     @EventHandler public void onDeath(PlayerDeathEvent event) { cancel(event.getEntity().getUniqueId(), false); }
 
     @EventHandler(priority = EventPriority.HIGH) public void onFirstJoin(PlayerJoinEvent event) {
-        if (event.getPlayer().hasPlayedBefore()) return;
+        if (!getConfig().getBoolean("join.teleport-to-spawn", false) && event.getPlayer().hasPlayedBefore()) return;
         Location destination = getSpawn();
         if (destination == null) return;
         Bukkit.getScheduler().runTask(this, () -> {
