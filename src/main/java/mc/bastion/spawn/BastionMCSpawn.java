@@ -206,14 +206,26 @@ public final class BastionMCSpawn extends JavaPlugin implements Listener, Comman
     @EventHandler public void onQuit(PlayerQuitEvent event) { cancel(event.getPlayer().getUniqueId(), false); }
     @EventHandler public void onDeath(PlayerDeathEvent event) { cancel(event.getEntity().getUniqueId(), false); }
 
-    @EventHandler(priority = EventPriority.HIGH) public void onFirstJoin(PlayerJoinEvent event) {
-        if (!getConfig().getBoolean("join.teleport-to-spawn", false) && event.getPlayer().hasPlayedBefore()) return;
+    @EventHandler(priority = EventPriority.MONITOR) public void onFirstJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        if (!getConfig().getBoolean("join.teleport-to-spawn", false) && player.hasPlayedBefore()) return;
         Location destination = getSpawn();
-        if (destination == null) return;
-        Bukkit.getScheduler().runTask(this, () -> {
-            Player player = event.getPlayer();
-            if (player.isOnline()) player.teleportAsync(destination);
-        });
+        if (destination == null) {
+            getLogger().warning("No se pudo enviar a " + player.getName() + " al spawn: revisa spawn.yml y que el mundo este cargado.");
+            return;
+        }
+        // Wait until the join sequence has completed before teleporting across worlds.
+        UUID uuid = player.getUniqueId();
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            Player online = Bukkit.getPlayer(uuid);
+            if (online == null || !online.isOnline()) return;
+            online.teleportAsync(destination).thenAccept(success -> {
+                if (!success) getLogger().warning("No se pudo teletransportar a " + online.getName() + " al spawn al ingresar.");
+            }).exceptionally(error -> {
+                getLogger().warning("Error al teletransportar a " + online.getName() + " al spawn: " + error.getMessage());
+                return null;
+            });
+        }, 2L);
     }
     @EventHandler(priority = EventPriority.HIGH) public void onRespawn(PlayerRespawnEvent event) {
         Location destination = getSpawn();
