@@ -24,6 +24,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
@@ -40,6 +41,7 @@ public final class BastionMCSpawn extends JavaPlugin implements Listener, Comman
     private YamlConfiguration spawnConfig, messagesConfig;
     private final Map<UUID, BukkitTask> pending = new HashMap<>();
     private final Map<UUID, Location> startingPositions = new HashMap<>();
+    private static final String JOIN_TRAVEL_FLAG = "bastionmcspawn_join_travel";
     private static final Pattern HEX = Pattern.compile("&#([0-9a-fA-F]{6})");
     private static final Pattern LEGACY = Pattern.compile("(?i)&([0-9a-fk-or])");
     private static final MiniMessage MINI = MiniMessage.miniMessage();
@@ -60,6 +62,7 @@ public final class BastionMCSpawn extends JavaPlugin implements Listener, Comman
     @Override public void onDisable() {
         for (BukkitTask task : pending.values()) task.cancel();
         pending.clear(); startingPositions.clear();
+        for (Player player : Bukkit.getOnlinePlayers()) player.removeMetadata(JOIN_TRAVEL_FLAG, this);
     }
 
     // Accepts &-codes, &#RRGGBB, MiniMessage <gradient:...> and <#RRGGBB>.
@@ -203,28 +206,47 @@ public final class BastionMCSpawn extends JavaPlugin implements Listener, Comman
                 from.getBlockX() != to.getBlockX() || from.getBlockY() != to.getBlockY() || from.getBlockZ() != to.getBlockZ())
             cancel(id, true);
     }
-    @EventHandler public void onQuit(PlayerQuitEvent event) { cancel(event.getPlayer().getUniqueId(), false); }
+    @EventHandler public void onQuit(PlayerQuitEvent event) {
+        cancel(event.getPlayer().getUniqueId(), false);
+        event.getPlayer().removeMetadata(JOIN_TRAVEL_FLAG, this);
+    }
     @EventHandler public void onDeath(PlayerDeathEvent event) { cancel(event.getEntity().getUniqueId(), false); }
 
-    @EventHandler(priority = EventPriority.MONITOR) public void onFirstJoin(PlayerJoinEvent event) {
+    // Only first-time players are sent to spawn. Returning players keep their logout position.
+    // The metadata flag prevents BastionMCNameTangs from attaching a TextDisplay passenger
+    // during the initial cross-world teleport, including its 1-tick repeating updater.
+    @EventHandler(priority = EventPriority.LOWEST) public void onFirstJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        if (!getConfig().getBoolean("join.teleport-to-spawn", false) && player.hasPlayedBefore()) return;
+        if (!getConfig().getBoolean("join.teleport-to-spawn", true) || player.hasPlayedBefore()) return;
         Location destination = getSpawn();
         if (destination == null) {
             getLogger().warning("No se pudo enviar a " + player.getName() + " al spawn: revisa spawn.yml y que el mundo este cargado.");
             return;
         }
-        // Wait until the join sequence has completed before teleporting across worlds.
         UUID uuid = player.getUniqueId();
+        player.setMetadata(JOIN_TRAVEL_FLAG, new FixedMetadataValue(this, true));
         Bukkit.getScheduler().runTaskLater(this, () -> {
             Player online = Bukkit.getPlayer(uuid);
             if (online == null || !online.isOnline()) return;
-            online.teleportAsync(destination).thenAccept(success -> {
-                if (!success) getLogger().warning("No se pudo teletransportar a " + online.getName() + " al spawn al ingresar.");
-            }).exceptionally(error -> {
-                getLogger().warning("Error al teletransportar a " + online.getName() + " al spawn: " + error.getMessage());
-                return null;
-            });
+            // Also compatible with older NameTangs versions that ignore the flag.
+            for (Entity passenger : online.getPassengers()) {
+                if (passenger instanceof TextDisplay) online.removePassenger(passenger);
+            }
+            try {
+                online.teleportAsync(destination).whenComplete((success, error) ->
+                    Bukkit.getScheduler().runTask(this, () -> {
+                        online.removeMetadata(JOIN_TRAVEL_FLAG, this);
+                        if (error != null) {
+                            getLogger().warning("Error al teletransportar a " + online.getName() + " al spawn: " + error.getMessage());
+                        } else if (!Boolean.TRUE.equals(success)) {
+                            getLogger().warning("No se pudo teletransportar a " + online.getName() + " al spawn al ingresar.");
+                        }
+                    })
+                );
+            } catch (Exception error) {
+                online.removeMetadata(JOIN_TRAVEL_FLAG, this);
+                getLogger().warning("Error al iniciar el teletransporte de " + online.getName() + ": " + error.getMessage());
+            }
         }, 2L);
     }
     @EventHandler(priority = EventPriority.HIGH) public void onRespawn(PlayerRespawnEvent event) {

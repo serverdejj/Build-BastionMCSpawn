@@ -4,7 +4,8 @@ teleport:
   cancel-on-move: true
   op-bypass: false
 
-# true: todos los jugadores aparecen en el spawn al conectarse.
-# false: solo jugadores nuevos (comportamiento anterior).
+# true: solamente los jugadores que entran POR PRIMERA VEZ aparecen en /spawn.
+# false: desactiva el teletransporte automatico al ingresar.
+# Los jugadores que regresan siempre conservan su ultima ubicacion.
 join:
   teleport-to-spawn: true
